@@ -1,10 +1,10 @@
-//require - это команда для подключения
-const { src, dest, series, parallel } = require('gulp'); //загружаем, подключаем gulp
+
+const { src, dest, series, parallel, watch } = require('gulp'); //загружаем, подключаем gulp
 const uglify = require('gulp-uglify'); //подкл. пакет минифицирования .js файлов
 const concat = require('gulp-concat'); //склеивает файлы, в один
 const cleanCSS = require('gulp-clean-css'); //сжимает css файлы
 const del = require('del'); //удаление папки перед сборкой
-// const imagemin = require('gulp-imagemin'); //оптимизация изображений
+const imagemin = require('gulp-imagemin'); //оптимизация изображений
 // const clean = require('gulp-clean'); //удаляет файл или папку
 // const shell = require('gulp-shell'); //очередность запуска
 // const browserSync = require('browser-sync').create();
@@ -65,29 +65,28 @@ function css() {
 		// .pipe(reload({stream:true}));
 }
 
+function fonts() {
+	return src(path.source.fonts)
+		.pipe(dest(path.build.fonts));
+}
 
-// gulp.task('fonts', function() {
-// 	return gulp.src(path.source.fonts)
-// 		.pipe(gulp.dest(path.build.fonts));
-// });
-
-// gulp.task('images', function() {
-// 	return gulp.src(path.source.image)
-// 		.pipe(imagemin([
-// 		    imagemin.gifsicle({interlaced: true}),
-// 		    imagemin.jpegtran({progressive: true}),
-// 		    imagemin.optipng({optimizationLevel: 5}),
-// 		    imagemin.svgo({
-// 		        plugins: [
-// 		            {removeViewBox: true},
-// 		            {cleanupIDs: false}
-// 		        ]
-// 		    })
-// 		], {
-// 		    verbose: true
-// 		}))
-// 		.pipe(gulp.dest(path.build.image));
-// });
+function images() {
+	return src(path.source.image)
+		.pipe(imagemin([
+			imagemin.gifsicle({interlaced: true}),
+			imagemin.mozjpeg({quality: 75, progressive: true}),
+			imagemin.optipng({optimizationLevel: 5}),
+		    imagemin.svgo({
+				plugins: [
+					{removeViewBox: true},
+					{cleanupIDs: false}
+				]
+			})
+		], {
+		    verbose: true
+		}))
+		.pipe(dest(path.build.image));
+};
 
 function cleanFolder() {
 	return del(['build']);
@@ -110,11 +109,11 @@ function cleanFolder() {
 //     });
 // });
 
-// gulp.task('watch', function() {
-	// gulp.watch('app/index.html', ['html']);
-	// gulp.watch('app/css/*.css', ['css']);
-	// gulp.watch('app/js/*.js', ['js']);
-// });// Ctrl+C для остановки задачи
+function watcher() {
+	watch('app/index.html', html);
+	watch('app/css/*.css', css);
+	watch('app/js/*.js', js);
+};
 
 // gulp.task('server', function() {
 	// runSequence('build', 'browser-sync', 'watch');
@@ -125,6 +124,10 @@ function cleanFolder() {
 exports.js = js;
 exports.css = css;
 exports.html = html;
-exports.cleanFolder = cleanFolder;
-exports.build  = series(cleanFolder, parallel(html, css, js));
-exports.default  = series(cleanFolder, parallel(html, css, js));
+exports.fonts = fonts;
+exports.images = images;
+exports.clean = cleanFolder;
+exports.watcher = watcher;
+exports.build  = series(cleanFolder, parallel(html, css, js, images, fonts));
+
+exports.default  = series(cleanFolder, parallel(html, css, js, images, fonts));
